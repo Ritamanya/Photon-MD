@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="renderer/icon.png" alt="Photon MD Logo" width="96" />
+  <img src="renderer/logo.png" alt="Photon MD Logo" width="96" />
   <h1>Photon MD</h1>
   <p><strong>A zero-framework visual Markdown editor built from scratch.</strong></p>
 
