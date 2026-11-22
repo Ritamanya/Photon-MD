@@ -1,0 +1,24 @@
+Photon MD Software License
+Copyright (c) 2026 Ritamanya Bhattacharjee. All Rights Reserved.
+
+1. Binary Use Grant
+Permission is hereby granted to any individual or organization to download,
+install, and use the official pre-compiled executable binaries of Photon MD
+("Software") free of charge for personal, educational, or commercial note-taking.
+
+2. Source Code Visibility & Restrictions
+The source code of the Software is made publicly visible on GitHub solely for
+transparency, learning, and evaluation purposes. Without explicit prior written
+permission from the copyright holder (Ritamanya Bhattacharjee), you may NOT:
+  (a) Copy, fork for redistribution, modify, or create derivative works from
+      the source code or its core DOM-packing/rendering architecture;
+  (b) Incorporate any portion of the source code into another software
+      application, library, or commercial product;
+  (c) Sell, sublicense, rent, or redistribute the Software or its binaries.
+
+3. Disclaimer of Warranty
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE
+USE OF THE SOFTWARE.

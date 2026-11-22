@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Photon MD</title>
+    <style>
+        :root {
+            --bg-app: #ffffff;
+            --bg-sidebar: #f8fafc;
+            --bg-toolbar: #ffffff;
+            --bg-hover: #f1f5f9;
+            --bg-active: #eef2ff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+        }
+        *{
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body{
+            display: flex;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+        header, footer{
+            position: fixed;
+            width: 100vw;
+            height: 6vh;
+            left: 0;
+            display: flex;
+        }
+        #midcontent{
+            position: fixed;
+            width: 100vw;
+            top: 0;
+            left: 0;
+            display: flex;
+        }
+        header{
+            background-color: #dcc200;
+            top: 0;
+            border-bottom: black solid 1px;
+        }
+        footer{
+            bottom: 0;
+            background-color: #ffe68c;
+            border-top: black solid 1px;
+        }
+        #midcontent{
+            width: 100vw;
+            /*height: 50vh;*/
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: flex-start;
+            background:
+                    linear-gradient(116deg, #ffd3fa, #ffa8f3) padding-box;
+        }
+        #sidebar {
+            /* Remove position: fixed and left: 0 so Flexbox sees it! */
+            width: 16vw;
+            min-width: 200px;
+            height: 100%;
+            flex-shrink: 0;
+            border-right: 1px solid black;
+            background: linear-gradient(135deg, yellowgreen, cyan) padding-box;
+            transition: width 0.35s ease, min-width 0.35s ease, border 0.35s ease;
+            overflow: hidden;
+        }
+
+        #sidebar.closed {
+            width: 0;
+            min-width: 0;
+            border-right: none;
+        }
+
+        #maincontent {
+            flex: 1;           /* Automatically takes 100% of remaining width! */
+            min-width: 0;      /* Prevents wide tables/code blocks from breaking flex */
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #coreui {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+
+        #status {
+            width: 100%;
+            min-height: 36px;
+            flex-shrink: 0;
+        }
+
+        #editor {
+            flex: 1;           /* Automatically fills all height between #status and footer */
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;  /* Scrolls cleanly inside #editor without touching footer */
+            padding: 20px 32px;
+            background: #ffffff;
+        }
+
+        #navcolap{
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            background: transparent;
+            border: none;
+            transition: all 0.3s ease-in-out;
+            z-index: 99;
+        }
+        #navcolap svg{
+            width: 20px;
+            height: 20px;
+            margin-top: 4px;
+
+        }
+        .navon{
+            translate: 4px;
+            scale: 1.02;
+
+        }
+        .navoff{
+            transform: rotate(-180deg);
+        }
+
+        /*Copied from previous styles*/
+
+        #mainhd {
+            margin: 0;
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+            padding: 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .header {
+            width: 100%;
+            /*padding: 30px 24px 35px;*/
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            border-bottom: 1px solid rgba(255, 237, 0, 0.15);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #ad33ff;
+            transition: transform 0.3s ease, color 0.3s ease;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            transform: scale(2.1);
+            color: #00c008;
+        }
+        .icon-btn:active{
+            transform: scale(0.5);
+            color: #ad33ff;
+        }
+
+        .btn-signin {
+            background: linear-gradient(135deg, #ffed00 0%, #ffc800 100%);
+            color: #1e293b;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            margin-right: 6px;
+
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 237, 0, 0.3);
+        }
+
+        .btn-signin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 237, 0, 0.4);
+        }
+
+        .header-logo {
+            text-align: center;
+            animation: fadeInUp 0.6s ease-out;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-container {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffed00 0%, #fff55c 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 30px rgba(255, 237, 0, 0.4);
+            position: relative;
+            animation: rotateplus 5s ease-in-out 2;
+            overflow: hidden;
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid #ffed00;
+            animation: pulse 3s ease-in-out infinite;
+            opacity: 0.3;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .header-logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffed00 0%, #00ffe7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+        }
+
+        .header-logo p {
+            font-size: 20px;
+            color: black;
+        }
+        #status{
+            width: 100%;
+            height: 20px;
+        }
+        /*#editor{
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+        }*/
+        #file-tree{
+            cursor: pointer;
+            user-select: none;
+        }
+        .vault-controls {
+            display: flex;
+            gap: 6px;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .vault-controls button {
+            flex: 1;
+            height: 30px;
+            padding: 0 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #ffffff;
+            color: var(--text-main);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+
+        .vault-controls button:hover {
+            background: var(--bg-active);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        #vault-title {
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .vault-controls button:hover {
+            background: var(--bg-active);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        #vault-title {
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #new-note-input {
+            margin: 4px 10px 8px;
+            padding: 6px 8px;
+            font-size: 12.5px;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            outline: none;
+            background: #ffffff;
+            color: var(--text-main);
+        }
+
+        #file-tree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px 8px 12px;
+        }
+
+        .tree-folder,
+        .tree-file {
+            padding: 6px 10px;
+            margin-bottom: 2px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #334155;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background 0.12s, color 0.12s;
+        }
+
+        .tree-folder:hover,
+        .tree-file:hover {
+            background: var(--bg-hover);
+            color: var(--text-main);
+        }
+
+        .tree-file.active-note {
+            background: var(--bg-active);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+
+    </style>
+    <link rel="stylesheet" href="coreeditor.css">
+    <link rel="stylesheet" href="table.css">
+    <link rel="stylesheet" href="toolbar.css">
+    <style>
+        #editor {
+            flex: 1;
+            display: block;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px 32px;
+            background: #ffffff;
+        }
+    </style>
+
+</head>
+<body>
+<header id="header">
+    <div id="mainhd">
+        <div class="header">
+            <div class="header-top">
+                <button class="icon-btn" aria-label="Back">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <button class="btn-signin" aria-label="Sign In">
+                    SIGN IN
+                </button>
+            </div>
+
+            <div class="header-logo">
+                <div class="logo-container">
+                    <div class="logo-icon">
+                        <img src="../images/logo.png" alt="Obsidian Competitor Logo">
+                    </div>
+                </div>
+                <h1>Obsidian Competitor</h1>
+            </div>
+        </div>
+    </div>
+</header>
+<div id="midcontent">
+    <div id="sidebar" style="display: flex; flex-direction: column;">
+        <div style="display: flex; flex-direction: column;" class="vault-controls">
+            <div class="sdctone">
+                <button style="margin-top: -14px;" id="btn-open-vault" onclick="openVaultFolder()">📂 Open Vault</button>
+                <button style="margin-top: -12px;" id="btn-new-note" onclick="createNewNote()">➕ New Note</button>
+            </div>
+            <div class="sdcttwo"></div>
+
+
+        </div>
+        <div id="vault-title">No Vault Open</div>
+        <input id="new-note-input" type="text" placeholder="Note name (Enter to create)" style="display:none; margin:6px 8px; padding:5px 8px; border-radius:4px; border:1px solid #333;">
+        <div style="overflow-y: scroll" id="file-tree"></div>
+    </div>
+    <div id="maincontent">
+        <div id="coreui" style="height: 100%; width: 100%">
+            <div id="status">
+                <button id="navcolap" class="navon" onclick="slider()" title="Toggle Sidebar">
+                    <svg viewBox="0 0 100 80" width="18" height="18">
+                        <line x1="10" y1="10" x2="90" y2="10" stroke="currentColor" stroke-width="8" stroke-linecap="round" />
+                        <line x1="10" y1="30" x2="90" y2="30" stroke="currentColor" stroke-width="8" stroke-linecap="round" />
+                        <line x1="10" y1="50" x2="90" y2="50" stroke="currentColor" stroke-width="8" stroke-linecap="round" />
+                        <line x1="10" y1="70" x2="90" y2="70" stroke="currentColor" stroke-width="8" stroke-linecap="round" />
+                    </svg>
+                </button>
+
+                <span class="tb-sep"></span>
+
+                <!-- Inline Formatting -->
+                <button class="tb-btn" onmousedown="event.preventDefault(); wrapSelection('**', '**')" title="Bold (Ctrl+B)"><b>B</b></button>
+                <button class="tb-btn" onmousedown="event.preventDefault(); wrapSelection('*', '*')" title="Italic (Ctrl+I)"><i>I</i></button>
+                <button class="tb-btn" onmousedown="event.preventDefault(); wrapSelection('`', '`')" title="Inline Code">&lt;/&gt;</button>
+                <button class="tb-btn" onmousedown="event.preventDefault(); wrapSelection('$', '$')" title="Inline Math">∑</button>
+                <button class="tb-btn" onmousedown="event.preventDefault(); wrapSelection('$$', '$$')" title="Display Math">∫</button>
+
+                <span class="tb-sep"></span>
+
+                <!-- Headings & Lists -->
+                <button class="tb-btn" onmousedown="event.preventDefault(); toggleHeading(1)" title="Heading 1">H1</button>
+                <button class="tb-btn" onmousedown="event.preventDefault(); toggleHeading(2)" title="Heading 2">H2</button>
+                <button class="tb-btn" onmousedown="event.preventDefault(); toggleHeading(3)" title="Heading 3">H3</button>
+                <button class="tb-btn" onmousedown="event.preventDefault(); toggleBullet()" title="Bullet List">• List</button>
+                <button class="tb-btn" onmousedown="event.preventDefault(); insertHR()" title="Horizontal Divider">―</button>
+
+                <span class="tb-sep"></span>
+
+                <!-- Blocks & PhotonMD Widgets -->
+                <button class="tb-btn" onmousedown="event.preventDefault(); insertCodeBlock()" title="Code Block">{ } Code</button>
+
+                <div class="tb-dropdown">
+                    <button class="tb-btn" onmousedown="event.preventDefault(); toggleTablePicker()" title="Insert Table">⊞ Table</button>
+                    <div id="table-picker" class="tb-popover">
+                        <div id="table-picker-label">Select size</div>
+                        <div id="table-picker-grid"></div>
+                    </div>
+                </div>
+
+                <button class="tb-btn" onmousedown="event.preventDefault(); insertWidget('/graph{sin(x)}')" title="Insert Canvas Graph">📈 Graph</button>
+                <button class="tb-btn" onmousedown="event.preventDefault(); insertWidget('/chart{bar: A=10, B=25, C=18}')" title="Insert Chart.js">📊 Chart</button>
+
+                <span class="tb-sep"></span>
+
+                <!-- File Actions -->
+                <button class="tb-btn" onmousedown="event.preventDefault(); saveCurrentNote()" title="Save Note (Ctrl+S)">💾 Save</button>
+                <button class="tb-btn" onmousedown="event.preventDefault(); exportCurrentPdf()" title="Export PDF">📄 PDF</button>
+            </div>
+            <div style="overflow: scroll" id="editor"><div class="line" active="true"><div id="cursor"></div></div></div>
+        </div>
+</div>
+</div>
+<footer id="footer"></footer>
+</body>
+<script>
+    let isnavon = true;
+    const navcolap = document.getElementById("navcolap");
+    console.log(navcolap);
+    const sidebar = document.getElementById("sidebar");
+    const midcontent = document.getElementById("midcontent");
+    const header = document.getElementById("header");
+    const footer = document.getElementById("footer");
+    let headerheight = header.offsetHeight;
+    const render = function () {
+        let headerheight = header.offsetHeight;
+        let footerheight = footer.offsetHeight;
+
+        midcontent.style.top = headerheight + "px";
+        midcontent.style.height = (window.innerHeight - headerheight - footerheight) + "px";
+        navcolap.style.top = headerheight + "px";
+    };
+
+    const slider = function () {
+        const isClosed = sidebar.classList.toggle("closed");
+        /*if (!isClosed) {
+            navcolap.style.position = 'fixed';
+            navcolap.style.top = '0';
+            navcolap.style.left = '0';
+        }
+        else navcolap.style.position = '';
+        navcolap.className = isClosed ? "navoff" : "navon";*/
+    };
+
+    window.addEventListener("resize", render);
+    render();
+</script>
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$']],
+            displayMath: [['$$', '$$']]
+        },
+        startup: {
+            typeset: false // Prevents MathJax from running full page scans
+        }
+    };
+</script>
+<script src="coreeditor.js"></script>
+<script src="tableengine.js"></script>
+<script src="mathjax.js"></script>
+<script src="vault.js"></script>
+</html>

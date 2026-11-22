@@ -1,0 +1,300 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    /*            font-family: monospace;*/
+    font-size: 22px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.line {
+    display: block;
+    word-break: normal;
+    overflow-wrap: break-word; /* Only breaks a word if a single word is wider than the whole screen */
+    align-items: baseline;
+    min-height: 1.4em;
+    white-space: pre; /* Preserves spaces so spacebar works */
+}
+.lc {
+    display: inline; /* Treats consecutive non-space .lc divs as a single unbreakable word! */
+    white-space: pre-wrap;
+    user-select: text;
+}
+.upc{
+    display: inline; /* Treats consecutive non-space .lc divs as a single unbreakable word! */
+    white-space: pre-wrap;
+    user-select: text;
+/*    background-color: #00c008;*/
+}
+#cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.2em;
+    background-color: black;
+    vertical-align: text-bottom;
+    margin-right: -2px; /* Zero layout shift: cursor overlays without pushing characters apart! */
+    position: relative;
+    z-index: 10;
+    animation: blink 1s infinite; /* Restores the blinking animation! */
+}
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    26% { opacity: 0; }
+    76% { opacity: 0;}
+}
+.h1 {
+    font-size: 2.25em;
+    font-weight: 700;
+    padding: 0px 12px 10px 4px;
+    margin-bottom: 10px;
+    border-bottom: solid 1px #333;
+}
+.h2 {
+    font-size: 1.85em;
+    font-weight: 700;
+    padding: 0px 10px 8px 4px;
+    margin-bottom: 8px;
+    border-bottom: solid 1px #555;
+}
+.h3 {
+    font-size: 1.55em;
+    font-weight: 600;
+    padding: 0px 8px 6px 2px;
+    margin-bottom: 6px;
+    border-bottom: solid 1px #888;
+}
+.h4 {
+    font-size: 1.32em;
+    font-weight: 600;
+    padding: 0px 6px 4px 2px;
+    margin-bottom: 4px;
+}
+.h5 {
+    font-size: 1.18em;
+    font-weight: 600;
+    padding: 0px 4px 2px 2px;
+    margin-bottom: 4px;
+}
+.h6 {
+    font-size: 1.08em;
+    font-weight: 600;
+    padding: 0px 4px 2px 2px;
+    margin-bottom: 3px;
+}
+.h7 {
+    font-size: 1.02em;
+    font-weight: 600;
+    font-style: italic;
+    margin-bottom: 2px;
+}
+.h8 {
+    font-size: 0.96em;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2px;
+}
+.h9 {
+    font-size: 0.92em;
+    font-weight: 600;
+    font-style: italic;
+    color: #444;
+    margin-bottom: 2px;
+}
+.h10 {
+    font-size: 0.88em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #555;
+    margin-bottom: 2px;
+}
+.mc, .hc, .bltc, .linecc {
+    display: inline-block;
+    vertical-align: baseline;
+}
+
+.upc, .bc, .ic {
+    display: inline;
+    white-space: pre-wrap;
+}
+.mc[data-display="true"] {
+    display: block;
+    width: 100%;
+    flex-basis: 100%;
+    text-align: center;
+    margin: 12px 0;
+}
+.bc{
+    font-weight: bold;
+}
+.ic{
+    font-style: italic;
+}
+/*.linecc{
+    font-family: "JetBrains Mono Medium", 'Fira Code','Agency FB','sans-serif';
+    background-color: #d4d4d4;
+    color: #004cda;
+    padding: 2px;
+    border-radius: 6px;
+    border: solid 1px black;
+}*/
+.linecc {
+    font-family: "JetBrains Mono Medium", 'Fira Code', monospace;
+    font-size: 0.88em;
+    background-color: #f3f4f6;
+    color: #6800c9;
+    padding: 2px 6px;
+    border-radius: 5px;
+    border: 1px solid #000000;
+}
+/* Main Code Container */
+/*.cc {
+    background-color: #969696;
+    color: #d4d4d4;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', monospace;
+    font-size: 14px;
+    border-radius: 8px;
+    margin: 12px 0;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    border: 1px solid #333333;
+    user-select: text;
+    cursor: text;
+}
+
+!* Top Header Bar showing Language *!
+.cc-header {
+    background-color: #626262;
+    color: #000000;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 6px 16px;
+    border-bottom: 1px solid #333333;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+!* Inner Code Body *!
+.cc-body {
+    padding: 14px 16px;
+    white-space: pre-wrap;
+    line-height: 1.55;
+    overflow-x: auto;
+    tab-size: 4;
+}*/
+/* Main Code Container (Light Theme) */
+.cc {
+    background-color: #ffffff;
+    color: #24292f; /* High-contrast dark grey for readability */
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', monospace;
+    font-size: 14px;
+    border-radius: 8px;
+    margin: 12px 0;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); /* Softer, modern shadow */
+    border: 1px solid #d0d7de; /* Subtle, professional border */
+    user-select: text;
+    cursor: text;
+}
+
+/* Top Header Bar showing Language */
+.cc-header {
+    background-color: #f6f8fa; /* Slightly darker than white for separation */
+    color: #57606a;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 8px 16px;
+    border-bottom: 1px solid #d0d7de;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Inner Code Body */
+.cc-body {
+    padding: 16px;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    overflow-x: auto;
+    tab-size: 4;
+    background-color: #ffffff;
+}
+
+/* IDE Syntax Token Colors (JetBrains Dark contrast Palette) */
+/*.syn-comment  { color: #7EC356; font-style: italic; } !* High-contrast bright green *!
+.syn-string   { color: #54B33E; }                      !* Vibrant emerald green *!
+.syn-keyword  { color: #ff8c1a; font-weight: 700; }    !* Signature JetBrains bold orange *!
+.syn-type     { color: #9d4b00; font-weight: 600; }    !* Vivid amber-orange for types *!
+.syn-number   { color: #004cda; }                      !* Electric cyan *!
+.syn-function { color: #FFCF40; }                      !* Bright gold *!*/
+/* IDE Syntax Token Colors (Light Mode Palette) */
+.syn-comment  { color: #6a737d; font-style: italic; } /* Muted grey for non-intrusive comments */
+.syn-string   { color: #0a3069; }                      /* Deep, readable blue */
+.syn-keyword  { color: #cf222e; font-weight: 600; }    /* Crimson red for control flow */
+.syn-type     { color: #953800; font-weight: 600; }    /* Warm amber/brown for data types */
+.syn-number   { color: #0550ae; }                      /* Strong, vibrant blue */
+.syn-function { color: #8250df; }                      /* Rich purple for function calls */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 16mm;
+    }
+
+    header,
+    footer,
+    #sidebar,
+    #status,
+    #cursor,
+    .nc,
+    .tb-popover,
+    #new-note-input,
+    .no-print {
+        display: none !important;
+    }
+
+    html,
+    body,
+    #midcontent,
+    #maincontent,
+    #coreui,
+    #editor {
+        display: block !important;
+        position: static !important;
+        top: auto !important;
+        left: auto !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .upc {
+        background: transparent !important;
+    }
+
+    .cc,
+    .tc,
+    .mc,
+    .hc {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}

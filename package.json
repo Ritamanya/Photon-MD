@@ -1,0 +1,51 @@
+{
+  "name": "photon-md",
+  "version": "1.0.0",
+  "description": "Zero-framework visual Markdown editor with live tables, MathJax, syntax highlighting, and vector PDF export.",
+  "author": "Ritamanya Bhattacharjee",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.photonmd.app",
+    "productName": "Photon MD",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "renderer/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "renderer/logo.ico",
+      "uninstallerIcon": "renderer/logo.ico"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  }
+}

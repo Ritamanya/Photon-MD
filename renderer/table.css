@@ -1,0 +1,90 @@
+/* Interactive Table Container */
+.tc {
+    position: relative;
+    display: inline-block;
+    min-width: 65%;
+    max-width: 100%;
+    margin: 16px 0;
+    padding-top: 34px; /* Room for hover action bar */
+    user-select: text;
+}
+.tc table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88em;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #ffffff;
+    overflow: hidden;
+}
+.tc th, .tc td {
+    border: 1px solid #d1d5db;
+    padding: 8px 12px;
+    min-width: 90px;
+    outline: none;
+    cursor: text;
+    vertical-align: top;
+}
+.tc th {
+    background-color: #f3f4f6;
+    font-weight: 700;
+    color: #111827;
+}
+.tc tr:nth-child(even) td {
+    background-color: #f9fafb;
+}
+.tc th:focus, .tc td:focus {
+    box-shadow: inset 0 0 0 2px #004cda;
+    background-color: #eff6ff !important;
+}
+
+/* Hover Toolbar for + / - Rows & Columns */
+.tc-toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    font-size: 16px;
+    border-left: 1px solid #595959;
+    border-right: 1px solid #595959;
+    border-top: 1px solid #595959;
+    border-radius: 16px;
+    pointer-events: none;
+    padding: 4px 16px 12px 12px;
+    transition: opacity 0.15s ease;
+    z-index: 20;
+}
+.tc:hover .tc-toolbar,
+.tc:focus-within .tc-toolbar {
+    opacity: 1;
+    pointer-events: auto;
+}
+.tc-btn {
+    background-color: #f3f4f6;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.12s ease;
+}
+.tc-btn:hover {
+    background-color: #004cda;
+    color: #ffffff;
+    border-color: #004cda;
+}
+.tc-btn.danger:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+    color: #ffffff;
+}
+
+@media print {
+    .tc-toolbar { display: none !important; }
+    .tc { padding-top: 0 !important; display: block; width: 100%; break-inside: avoid; }
+}
