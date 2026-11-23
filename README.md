@@ -55,23 +55,6 @@ Most modern Markdown editors wrap heavy third-party frameworks like CodeMirror o
 
 ---
 
-## Run From Source
-
-```bash
-git clone [https://github.com/Ritamanya/Photon-MD.git](https://github.com/Ritamanya/Photon-MD.git)
-cd Photon-MD
-npm install
-npm start
-```
-
-To build the Windows `.exe` locally:
-
-```bash
-npm run build
-```
-
----
-
 ## Roadmap (v2.0)
 
 * **Native `/graph{}` and `/chart{}` Widgets:** Render interactive plots and charts directly inside notes.
