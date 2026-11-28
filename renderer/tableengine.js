@@ -1,5 +1,5 @@
 // Renders **bold**, *italic*, and `code` inside table cells
-function formatCellInline(text) {
+function formatCellInlineold(text) {
     return (text || '')
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -7,6 +7,29 @@ function formatCellInline(text) {
         .replace(/\*\*(.+?)\*\*/g, '<span class="bc">$1</span>')
         .replace(/\*(.+?)\*/g, '<span class="ic">$1</span>')
         .replace(/`(.+?)`/g, '<span class="linecc">$1</span>');
+}
+// Renders **bold**, *italic*, `code`, and $math$ / $$math$$ inside table cells
+function formatCellInline(text) {
+    return (text || '')
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\$\$(.+?)\$\$/g, '<span class="mc" data-display="true">$$$$$1$$$$</span>')
+        .replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, '<span class="mc">$$$1$$</span>')
+        .replace(/\*\*(.+?)\*\*/g, '<span class="bc">$1</span>')
+        .replace(/\*(.+?)\*/g, '<span class="ic">$1</span>')
+        .replace(/`(.+?)`/g, '<span class="linecc">$1</span>');
+}
+
+function typesetCellMath(targetEl) {
+    if (!targetEl || !window.MathJax?.typesetPromise) return;
+    queueMicrotask(() => {
+        if (!targetEl.isConnected) return;
+        const mathNodes = Array.from(targetEl.querySelectorAll('.mc'));
+        if (mathNodes.length === 0) return;
+        MathJax.typesetClear(mathNodes);
+        MathJax.typesetPromise(mathNodes);
+    });
 }
 
 // Syncs all cells back into the table's rwmd attribute for saving/copying
@@ -34,9 +57,18 @@ function syncTableToMarkdown(nwtc) {
 
     nwtc.setAttribute('rwmd', mdRows.join('\n'));
 }
-
+function focusCellAtEnd(targetCell) {
+    if (!targetCell) return;
+    targetCell.focus();
+    const range = document.createRange();
+    range.selectNodeContents(targetCell);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
 // Makes any <th> or <td> directly editable without exploding the table
-function makeCellEditable(cell, nwtc, initialRaw = "") {
+function makeCellEditableold(cell, nwtc, initialRaw = "") {
     cell.setAttribute('contenteditable', 'true');
     cell.setAttribute('data-raw', initialRaw);
     cell.innerHTML = formatCellInline(initialRaw);
@@ -69,6 +101,7 @@ function makeCellEditable(cell, nwtc, initialRaw = "") {
         let raw = cell.innerText.replace(/\n/g, ' ').trim();
         cell.setAttribute('data-raw', raw);
         cell.innerHTML = formatCellInline(raw);
+        typesetCellMath(cell);
         syncTableToMarkdown(nwtc);
         pushHistory(true);
     });
@@ -86,6 +119,138 @@ function makeCellEditable(cell, nwtc, initialRaw = "") {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             cell.blur(); // Hides the temporary table buttons automatically!
+            let nextEl = nwtc.nextElementSibling;
+            if (!nextEl || !nextEl.classList.contains('line')) {
+                nextEl = newline();
+                nextEl.append(newnc());
+                nwtc.after(nextEl);
+            }
+            nextEl.prepend(newcursor());
+        }
+    });
+}
+function makeCellEditable(cell, nwtc, initialRaw = "", placeholder = "") {
+    cell.setAttribute('contenteditable', 'true');
+    cell.setAttribute('data-raw', initialRaw);
+    if (placeholder) cell.setAttribute('data-placeholder', placeholder);
+
+    const syncEmptyState = (val) => {
+        cell.classList.toggle('is-empty', !val || val.trim() === '');
+    };
+
+    cell.innerHTML = initialRaw ? formatCellInline(initialRaw) : '';
+    syncEmptyState(initialRaw);
+    typesetCellMath(cell);
+
+    cell.addEventListener('focus', () => {
+        cursor.remove();
+        nwtc._activeCell = cell;
+
+        let tr = cell.parentElement;
+        let colIdx = Array.from(tr.children).indexOf(cell);
+        let isHeader = tr.parentElement.tagName === 'THEAD';
+        let rowIdx = isHeader ? -1 : Array.from(tr.parentElement.children).indexOf(tr);
+
+        nwtc._activeCol = colIdx;
+        nwtc._activeRow = rowIdx;
+
+        let badge = nwtc.querySelector('.tc-pos-badge');
+        if (badge) {
+            badge.innerText = isHeader
+                ? `Header • Col ${colIdx + 1}`
+                : `Row ${rowIdx + 1} • Col ${colIdx + 1}`;
+        }
+
+        const raw = cell.getAttribute('data-raw') || '';
+        cell.innerText = raw;
+        syncEmptyState(raw);
+    });
+
+    cell.addEventListener('blur', () => {
+        let raw = cell.innerText.replace(/\n/g, ' ').trim();
+        cell.setAttribute('data-raw', raw);
+        cell.innerHTML = raw ? formatCellInline(raw) : '';
+        syncEmptyState(raw);
+        typesetCellMath(cell);
+        syncTableToMarkdown(nwtc);
+        pushHistory(true);
+    });
+
+    cell.addEventListener('input', () => {
+        const raw = cell.innerText.replace(/\n/g, ' ');
+        cell.setAttribute('data-raw', raw);
+        syncEmptyState(raw);
+        syncTableToMarkdown(nwtc);
+        pushHistory(false);
+    });
+
+    cell.addEventListener('click', (e) => e.stopPropagation());
+
+    cell.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const cells = Array.from(nwtc.querySelectorAll('thead th, tbody td'));
+            const idx = cells.indexOf(cell);
+            if (idx === -1) return;
+
+            if (e.shiftKey) {
+                if (idx > 0) focusCellAtEnd(cells[idx - 1]);
+            } else if (idx < cells.length - 1) {
+                focusCellAtEnd(cells[idx + 1]);
+            } else if (typeof nwtc._appendRow === 'function') {
+                const newRow = nwtc._appendRow();
+                focusCellAtEnd(newRow.children[0]);
+            }
+            return;
+        }
+        if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            e.preventDefault();
+            const allRows = Array.from(nwtc.querySelectorAll('thead tr, tbody tr'));
+            const currentRow = cell.parentElement;
+            const rowIdx = allRows.indexOf(currentRow);
+            const colIdx = Array.from(currentRow.children).indexOf(cell);
+            if (rowIdx === -1 || colIdx === -1) return;
+
+            if (e.key === 'ArrowUp') {
+                if (rowIdx > 0) {
+                    const targetCell = allRows[rowIdx - 1].children[colIdx];
+                    if (targetCell) focusCellAtEnd(targetCell);
+                } else {
+                    // Exit upward into the line above the table
+                    let prevEl = nwtc.previousElementSibling;
+                    if (prevEl && prevEl.classList.contains('line')) {
+                        cell.blur();
+                        const nc = prevEl.querySelector('.nc');
+                        if (nc) nc.before(newcursor());
+                        else prevEl.append(newcursor());
+                        lineprchecker(prevEl);
+                        ime.focus();
+                    }
+                }
+            } else {
+                if (rowIdx < allRows.length - 1) {
+                    const targetCell = allRows[rowIdx + 1].children[colIdx];
+                    if (targetCell) focusCellAtEnd(targetCell);
+                } else {
+                    // Exit downward into the line below the table
+                    cell.blur();
+                    let nextEl = nwtc.nextElementSibling;
+                    if (!nextEl || !nextEl.classList.contains('line')) {
+                        nextEl = newline();
+                        nextEl.append(newnc());
+                        nwtc.after(nextEl);
+                    }
+                    nextEl.prepend(newcursor());
+                    lineprchecker(nextEl);
+                    ime.focus();
+                }
+            }
+            return;
+        }
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            cell.blur();
             let nextEl = nwtc.nextElementSibling;
             if (!nextEl || !nextEl.classList.contains('line')) {
                 nextEl = newline();
@@ -282,6 +447,13 @@ function newtc(lcar) {
 
     nwtc.appendChild(toolbar);
     nwtc.appendChild(table);
+    nwtc._appendRow = () => {
+        const tr = createBlankRow();
+        tbody.appendChild(tr);
+        syncTableToMarkdown(nwtc);
+        pushHistory(true);
+        return tr;
+    };
     return nwtc;
 }
 function isTableLine(line) {

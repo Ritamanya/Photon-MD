@@ -11,6 +11,9 @@ body {
     font-size: 22px;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
+#editor::selection{
+    background-color: rgba(255, 243, 43, 0.87);
+}
 .line {
     display: block;
     word-break: normal;
@@ -30,16 +33,44 @@ body {
     user-select: text;
 /*    background-color: #00c008;*/
 }
-#cursor {
+/*#cursor {
     display: inline-block;
     width: 2px;
     height: 1.2em;
     background-color: black;
     vertical-align: text-bottom;
-    margin-right: -2px; /* Zero layout shift: cursor overlays without pushing characters apart! */
+    margin-right: -2px; !* Zero layout shift: cursor overlays without pushing characters apart! *!
     position: relative;
     z-index: 10;
-    animation: blink 1s infinite; /* Restores the blinking animation! */
+    animation: blink 1s infinite; !* Restores the blinking animation! *!
+}*/
+#cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.25em;
+    vertical-align: text-bottom;
+    margin: 0 -1px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #6366f1 0%, #06b6d4 100%);
+    box-shadow: 0 0 8px rgba(189, 248, 39, 0.89);
+    pointer-events: none;
+    animation: photon-caret 1.05s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    transition: all 0.1s ease-in-out;
+}
+
+@keyframes photon-caret {
+    0%, 45% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+    55%, 95% {
+        opacity: 0;
+        transform: scaleY(0.92);
+    }
+    100% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
 }
 @keyframes blink {
     0%, 100% { opacity: 1; }
@@ -117,22 +148,119 @@ body {
     vertical-align: baseline;
 }
 
-.upc, .bc, .ic {
+.upc, .bc, .ic, .chkb {
     display: inline;
     white-space: pre-wrap;
 }
-.mc[data-display="true"] {
+/*.mc[data-display="true"] {
     display: block;
     width: 100%;
     flex-basis: 100%;
     text-align: center;
     margin: 12px 0;
 }
+mc {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 1 !important;
+    white-space: normal !important;
+}
+.mc mjx-container svg {
+    display: inline-block;
+    vertical-align: middle;
+}*/
+.mc {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 1.1 !important;
+    white-space: normal !important;
+}
+
+.mc[data-display="true"] {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin: 12px 0;
+}
+
+.mc mjx-container {
+    display: inline-block !important;
+    line-height: 1 !important;
+    vertical-align: middle;
+}
+
+/*.mc mjx-container,
+.mc mjx-container * {
+    line-height: normal !important;
+    letter-spacing: normal !important;
+    box-sizing: content-box !important;
+}
+
+
+.mc mjx-container svg {
+    vertical-align: middle;
+    overflow: visible;
+}*/
+
+.line.has-bltc {
+    padding-left: var(--bltc-indent, 0px);
+}
+
+.line.has-bltc > .bltc {
+    margin-left: calc(-1 * var(--bltc-indent, 0px));
+    display: inline-block;
+    /* Use padding-right instead of margin-right so offsetWidth includes the gap */
+    margin-right: 0;
+    padding-right: 8px;
+}
+.bqc {
+    display: inline-block;
+    width: 0;
+    overflow: hidden;
+    vertical-align: middle;
+}
+
+.line.is-blockquote {
+    position: relative;
+    background: #f1f5f9;
+    border-left: 4px solid #4f46e5;
+    padding: 6px 14px;
+    margin: 4px 0;
+    margin-left: calc((var(--bq-depth, 1) - 1) * 16px);
+    border-radius: 0 6px 6px 0;
+    color: #334155;
+    font-style: normal;
+}
+
+/* Seamlessly merge consecutive blockquote lines into one note box */
+.line.is-blockquote:has(+ .line.is-blockquote) {
+    margin-bottom: 0;
+    border-bottom-right-radius: 0;
+    padding-bottom: 4px;
+}
+
+.line.is-blockquote + .line.is-blockquote {
+    margin-top: 0;
+    border-top-right-radius: 0;
+    padding-top: 4px;
+}
+
+@media print {
+    .line.is-blockquote {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
 .bc{
     font-weight: bold;
 }
 .ic{
     font-style: italic;
+}
+.chkb{
+    border-radius: 10px;
+    padding: 4px 14px 4px 14px;
+    border: 1px solid #002844
 }
 /*.linecc{
     font-family: "JetBrains Mono Medium", 'Fira Code','Agency FB','sans-serif';
@@ -290,7 +418,13 @@ body {
         background: transparent !important;
     }
 
+    .line.is-blockquote {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
     .cc,
+    .line,
     .tc,
     .mc,
     .hc {

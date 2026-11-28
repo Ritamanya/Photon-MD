@@ -19,19 +19,59 @@ window.addEventListener('click', (e) => {
     if (!e.target.closest('.tc')) ime.focus();
 });
 
+function insertWithAutoClose(text) {
+    if (text === '(') {
+        if (hasActiveSelection()) {
+            wrapSelection('(', ')');
+            return;
+        }
+        inserttextatcursor('()');
+        arrowleft();
+    } else if (text === '{') {
+        if (hasActiveSelection()) {
+            wrapSelection('{', '}');
+            return;
+        }
+        inserttextatcursor('{}');
+        arrowleft();
+    } else if (text === '[') {
+        if (hasActiveSelection()) {
+            wrapSelection('[', ']');
+            return;
+        }
+        inserttextatcursor('[]');
+        arrowleft();
+    }else if(text==="$" && hasActiveSelection()){
+        wrapSelection('$', '$');
+    }else if(text==="`" && hasActiveSelection()){
+        wrapSelection('`', '`');
+    }else if(text==="*" && hasActiveSelection()){
+        wrapSelection('*', '*');
+    } else {
+        inserttextatcursor(text);
+    }
+}
+
 ime.addEventListener('compositionstart', () => { isComposing = true; });
 
 ime.addEventListener('compositionend', (e) => {
     isComposing = false;
-    if (e.data) inserttextatcursor(e.data);
+    if (e.data) {
+        insertWithAutoClose(ime.value);
+    }
     ime.value = '';
 });
 
 ime.addEventListener('input', (e) => {
     if (isComposing) return;
-    if (e.inputType === 'deleteContentBackward') { backspace(); ime.value = ''; return; }
+    if (e.inputType === 'deleteContentBackward') {
+        scheduleBackspace();
+        ime.value = '';
+        return;
+    }
     if (ime.value) {
-        inserttextatcursor(ime.value);
+        cancelPendingAvroBackspace(ime.value);
+        insertWithAutoClose(ime.value);
         ime.value = '';
     }
 });
@@ -63,6 +103,7 @@ function newcursor() {
             const activeLine = currntline();
             if (activeLine && activeLine.classList.contains('line')) {
                 activeLine.setAttribute('active', 'true');
+                linescanner(activeLine);
             }
             if (prevLine.isConnected && prevLine !== activeLine) {
                 prevLine.setAttribute('active', 'false');
@@ -88,7 +129,7 @@ function findkeyfarr(arry){
     }
     if (key === "$$" || key === "$") text+=key;
 }
-function newhc(lcar) {
+function newhcold(lcar) {
     let text = "";
     for (let i = 0; i < lcar.length; i++) {
         text += lcar[i].innerText;
@@ -108,7 +149,7 @@ function newhc(lcar) {
     });
     return nwhc;
 }
-function newmc(lcar){
+function newmcold(lcar){
     let text = "";
     for(let i=0;i<lcar.length;i++) text += lcar[i].innerText;
     let nwmc = document.createElement('div');
@@ -122,9 +163,12 @@ function newmc(lcar){
         nwmc.after(newcursor());
         arrowleft();
     });
-    MathJax.typesetClear([nwmc]);
-    MathJax.typesetPromise([nwmc]);
     nwmc.style.userSelect = 'text';
+    queueMicrotask(() => {
+        if (!nwmc.isConnected) return;
+        MathJax.typesetClear([nwmc]);
+        MathJax.typesetPromise([nwmc]);
+    });
     return nwmc;
 }
 function rwinnertextcomputerfordoublecnts(lcar){
@@ -135,7 +179,7 @@ function rwinnertextcomputerfordoublecnts(lcar){
     }
     return [rw, innertext];
 }
-function newic(lcar){
+function newicold(lcar){
     let [rw, innertext] = rwinnertextcomputerfordoublecnts(lcar);
     let nwic = document.createElement('div');
     nwic.className='ic';
@@ -155,7 +199,7 @@ function newlinecc(lcar){
     nwic.innerText=innertext;
     return nwic;
 }
-let containers = ['bc','hc','mc','ic','bltc', 'linecc', 'upc']; // More to be added!!
+let containers = ['bc','hc','mc','ic','bltc', 'linecc', 'upc', 'chkb', 'bqc']; // More to be added!!
 function newlc(char){
     let nwlc = document.createElement('div');
     nwlc.className='lc';
@@ -173,7 +217,7 @@ function removeallelsfarr(lcar){
     for (let i = 0; i < lcar.length; i++) lcar[i].remove();
 }
 
-function newbc(lcar){
+function newbcold(lcar){
     let text = '';
     let innertext = '';
     for (let i = 0; i < lcar.length; i++){
@@ -190,7 +234,7 @@ function newbc(lcar){
     });
     return nwbc;
 }
-function newtc(lcar) {
+/*function newtc(lcar) {
     let rw = lcartotext(lcar).trimEnd();
     let rows = rw.split('\n');
 
@@ -251,9 +295,8 @@ function newtc(lcar) {
     nwtc.addEventListener('click', () => {
         exploder(nwtc);
     });
-
     return nwtc;
-}
+}*/
 function getClickedGraphemeOffset(e, upcEl) {
     let range = document.caretRangeFromPoint(e.clientX, e.clientY);
     if (!range || !upcEl.contains(range.startContainer)) return 0;
@@ -338,8 +381,37 @@ function helperlcpacker(line){
         removeallelsfarr(lcar);
     }
 }
-function linescanner(line){
-    ultimateccchecker();
+
+function newchkbold(lcar){
+    let rw = lcartotext(lcar);
+    let nwchkb = document.createElement('div');
+    nwchkb.className='chkb';
+    nwchkb.addEventListener('click', (e) => {
+        nwchkb.after(newcursor());
+        exploder(nwchkb);
+    });
+    nwchkb.innerText="";
+    return nwchkb;
+}
+function checkboxscanner(element){
+    if(element && element.className==='lc'&& element.innerText==='[' && element.nextElementSibling && element.className==='lc' && element.nextElementSibling.innerText===']'){
+        let cursorattched = false;
+        try{
+            cursorattched = element.nextElementSibling.nextElementSibling===cursor;
+        }catch(e){}
+        if(!cursorattched){
+            let lcar = [element, element.nextElementSibling];
+            let chkbox = newchkb(lcar);
+            element.nextElementSibling.after(chkbox, newcursor());
+            removeallelsfarr(lcar);
+            return chkbox;
+        }
+    }return null;
+
+}
+function linescannerold(line){
+    if (!isRestoringHistory) ultimateccchecker();
+    //rescanexploder(line);
 
     if(line.innerText==='') return;
     let quads = ["$$","**","~~"];
@@ -352,6 +424,11 @@ function linescanner(line){
     let mtmp = line.firstElementChild;
     while(mtmp){
         if(mtmp.className==='lc'){
+            const chkb = checkboxscanner(mtmp);
+            if (chkb) {
+                mtmp = chkb.nextElementSibling;
+                continue;
+            }
             if (quadchecker.includes(mtmp.innerText) && mtmp?.nextElementSibling?.innerText === mtmp.innerText) {
                 //We found a quad opening!!
                 const quadfd = mtmp.innerText.repeat(2);
@@ -391,7 +468,8 @@ function linescanner(line){
                         }
                     }
                 }
-            }else if(doubles.includes(mtmp.innerText)){
+            }
+            if(doubles.includes(mtmp.innerText)){
                 //we have got a double opening!!
                 const doublegot = mtmp.innerText;
                 let gotclosing = false;
@@ -443,6 +521,357 @@ function linescanner(line){
     ultimatetchecker();
     lineprchecker(line);
 }
+
+// Recursive given by gemini
+const inlineContainers = ['bc', 'hc', 'mc', 'ic', 'bltc', 'linecc', 'chkb'];
+
+function lcartorwmd(lcar) {
+    let text = "";
+    for (let i = 0; i < lcar.length; i++) {
+        const el = lcar[i];
+        if (el.className === 'nc') {
+            text += '\n';
+        } else if (el.className === 'lc') {
+            text += el.innerText;
+        } else if (el.hasAttribute('rwmd')) {
+            text += el.getAttribute('rwmd');
+        } else {
+            text += el.innerText;
+        }
+    }
+    return text;
+}
+
+function lcartotext(lcar) {
+    return lcartorwmd(lcar);
+}
+
+function getOutermostEditableContainer(el) {
+    let cur = el.parentElement;
+    let top = null;
+    while (cur && !cur.classList.contains('line')) {
+        if (cur.classList.contains('bc') || cur.classList.contains('ic') || cur.classList.contains('hc')) {
+            top = cur;
+        }
+        cur = cur.parentElement;
+    }
+    return top;
+}
+
+function attachContainerClick(el, explodeDirectly = false) {
+    el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const topOuter = getOutermostEditableContainer(el);
+        if (topOuter) {
+            topOuter.after(newcursor());
+            arrowleft();
+            return;
+        }
+        el.after(newcursor());
+        if (explodeDirectly) {
+            exploder(el);
+        } else {
+            arrowleft();
+        }
+    });
+}
+
+function collapseLeftoverLcs(containerEl) {
+    let child = containerEl.firstChild;
+    while (child) {
+        const next = child.nextSibling;
+        if (child.nodeType === Node.ELEMENT_NODE && child.className === 'lc') {
+            const txt = document.createTextNode(child.innerText);
+            containerEl.replaceChild(txt, child);
+        }
+        child = next;
+    }
+    containerEl.normalize();
+}
+
+function populateNestedContainer(targetEl, innerNodes) {
+    for (const node of innerNodes) {
+        if (node.className === 'lc') {
+            targetEl.appendChild(newlc(node.innerText));
+        } else {
+            targetEl.appendChild(node.cloneNode(true));
+        }
+    }
+    renderInlineChildren(targetEl);
+    collapseLeftoverLcs(targetEl);
+}
+
+function newmc(lcar) {
+    const text = lcartorwmd(lcar);
+    const nwmc = document.createElement('div');
+    nwmc.className = 'mc';
+    nwmc.setAttribute('rwmd', text);
+    nwmc.innerText = text;
+    if (text.startsWith('$$') && text.endsWith('$$')) {
+        nwmc.setAttribute('data-display', 'true');
+    }
+    attachContainerClick(nwmc, false);
+    nwmc.style.userSelect = 'text';
+
+    queueMicrotask(() => {
+        if (!nwmc.isConnected) return;
+        MathJax.typesetClear([nwmc]);
+        MathJax.typesetPromise([nwmc]);
+    });
+
+    return nwmc;
+}
+
+function newbc(lcar) {
+    const rw = lcartorwmd(lcar);
+    const nwbc = document.createElement('div');
+    nwbc.className = 'bc';
+    nwbc.setAttribute('rwmd', rw);
+
+    populateNestedContainer(nwbc, lcar.slice(2, lcar.length - 2));
+    attachContainerClick(nwbc, false);
+    return nwbc;
+}
+
+function newic(lcar) {
+    const rw = lcartorwmd(lcar);
+    const nwic = document.createElement('div');
+    nwic.className = 'ic';
+    nwic.setAttribute('rwmd', rw);
+
+    populateNestedContainer(nwic, lcar.slice(1, lcar.length - 1));
+    attachContainerClick(nwic, true);
+    return nwic;
+}
+
+function newhc(lcar) {
+    const text = lcartorwmd(lcar);
+    const nwhc = document.createElement('div');
+    nwhc.className = 'hc';
+    nwhc.setAttribute('rwmd', text);
+    nwhc.innerHTML = text;
+
+    // Recursively render Markdown & math inside HTML text nodes
+    const walker = document.createTreeWalker(nwhc, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let current;
+    while ((current = walker.nextNode())) {
+        if (!current.parentElement.closest('code, pre, script, style, mjx-container')) {
+            textNodes.push(current);
+        }
+    }
+    for (const tNode of textNodes) {
+        const val = tNode.nodeValue;
+        if (!val) continue;
+        const frag = document.createDocumentFragment();
+        for (const ch of toGraphemes(val)) {
+            frag.appendChild(newlc(ch));
+        }
+        tNode.parentNode.replaceChild(frag, tNode);
+    }
+    renderInlineChildren(nwhc);
+    collapseLeftoverLcs(nwhc);
+
+    attachContainerClick(nwhc, false);
+    return nwhc;
+}
+
+function newchkb(lcar) {
+    const rw = lcartorwmd(lcar);
+    const nwchkb = document.createElement('div');
+    nwchkb.className = 'chkb';
+    nwchkb.setAttribute('rwmd', rw);
+    nwchkb.innerText = "";
+    attachContainerClick(nwchkb, true);
+    return nwchkb;
+}
+
+function renderInlineChildren(containerEl) {
+    const quads = ["$$", "**", "~~"];
+    const doubles = ["$", "*", "`"];
+    const quadchecker = quads.map(q => q[0]);
+
+    let mtmp = containerEl.firstElementChild;
+    while (mtmp) {
+        if (mtmp.className === 'lc') {
+            const chkb = checkboxscanner(mtmp);
+            if (chkb) {
+                mtmp = chkb.nextElementSibling;
+                continue;
+            }
+
+            // 1. Quad delimiters ($$, **)
+            if (
+                quadchecker.includes(mtmp.innerText) &&
+                mtmp.nextElementSibling?.className === 'lc' &&
+                mtmp.nextElementSibling.innerText === mtmp.innerText
+            ) {
+                const quadfd = mtmp.innerText.repeat(2);
+                const quadck = mtmp.innerText;
+                let gotclosing = false;
+                const lcar = [mtmp, mtmp.nextElementSibling];
+                let stmp = mtmp.nextElementSibling.nextElementSibling;
+
+                while (stmp) {
+                    if (stmp.id === 'cursor') break;
+                    if (quadfd === "$$") {
+                        if (stmp.className !== 'lc') break;
+                    } else if (stmp.className !== 'lc' && !inlineContainers.includes(stmp.className)) {
+                        break;
+                    }
+
+                    lcar.push(stmp);
+                    if (
+                        stmp.className === 'lc' &&
+                        stmp.innerText === quadck &&
+                        stmp.nextElementSibling?.className === 'lc' &&
+                        stmp.nextElementSibling.innerText === quadck
+                    ) {
+                        lcar.push(stmp.nextElementSibling);
+                        gotclosing = true;
+                        break;
+                    }
+                    stmp = stmp.nextElementSibling;
+                }
+
+
+                if (gotclosing) {
+                    if (lcar.length === 4 && cursor?.previousElementSibling === lcar[lcar.length - 1]) {
+                        lcar[2].before(newcursor());
+                        return;
+                    } else if (cursor?.previousElementSibling === lcar[lcar.length - 1]) {
+                        mtmp = lcar[lcar.length - 1].nextElementSibling;
+                        continue; // || cursor?.nextElementSibling === lcar[0]
+                    } else if (quadfd === "$$") {
+                        const afterNode = lcar[lcar.length - 1].nextElementSibling;
+                        lcar[0].before(newmc(lcar));
+                        removeallelsfarr(lcar);
+                        mtmp = afterNode;
+                        continue;
+                    } else if (quadfd === "**") {
+                        const afterNode = lcar[lcar.length - 1].nextElementSibling;
+                        lcar[0].before(newbc(lcar));
+                        removeallelsfarr(lcar);
+                        mtmp = afterNode;
+                        continue;
+                    }
+                }
+            }
+            // 2. Double delimiters ($, *, `)
+            else if (doubles.includes(mtmp.innerText)) {
+                const doublegot = mtmp.innerText;
+                let gotclosing = false;
+                const lcar = [mtmp];
+                let stmp = mtmp.nextElementSibling;
+
+                while (stmp) {
+                    if (stmp.id === 'cursor') break;
+
+                    if (doublegot === "$") {
+                        if (stmp.className !== 'lc') break;
+                        lcar.push(stmp);
+                        if (stmp.innerText === "$") {
+                            gotclosing = true;
+                            break;
+                        }
+                    } else if (doublegot === "`") {
+                        if (stmp.className !== 'lc') break;
+                        lcar.push(stmp);
+                        if (stmp.innerText === "`") {
+                            gotclosing = true;
+                            break;
+                        }
+                    } else if (doublegot === "*") {
+                        if (stmp.className !== 'lc' && !inlineContainers.includes(stmp.className)) break;
+
+                        // Skip over inner **...** pairs when looking for the outer closing *
+                        if (
+                            stmp.className === 'lc' &&
+                            stmp.innerText === '*' &&
+                            stmp.nextElementSibling?.className === 'lc' &&
+                            stmp.nextElementSibling.innerText === '*'
+                        ) {
+                            let innerScan = stmp.nextElementSibling.nextElementSibling;
+                            const innerSpan = [stmp, stmp.nextElementSibling];
+                            let foundInnerClose = false;
+                            while (innerScan && innerScan.id !== 'cursor') {
+                                innerSpan.push(innerScan);
+                                if (
+                                    innerScan.className === 'lc' &&
+                                    innerScan.innerText === '*' &&
+                                    innerScan.nextElementSibling?.className === 'lc' &&
+                                    innerScan.nextElementSibling.innerText === '*'
+                                ) {
+                                    innerSpan.push(innerScan.nextElementSibling);
+                                    foundInnerClose = true;
+                                    break;
+                                }
+                                innerScan = innerScan.nextElementSibling;
+                            }
+                            if (foundInnerClose) {
+                                lcar.push(...innerSpan);
+                                stmp = innerSpan[innerSpan.length - 1].nextElementSibling;
+                                continue;
+                            }
+                        }
+
+                        lcar.push(stmp);
+                        if (stmp.className === 'lc' && stmp.innerText === '*') {
+                            gotclosing = true;
+                            break;
+                        }
+                    }
+                    stmp = stmp.nextElementSibling;
+                }
+
+                if (gotclosing) {
+                    if (lcar.length === 2 && cursor?.previousElementSibling === lcar[lcar.length - 1] && doublegot !== '`') {
+                        lcar[lcar.length - 1].before(newcursor());
+                        return;
+                    } else if (cursor?.previousElementSibling === lcar[lcar.length - 1]) {
+                        mtmp = lcar[lcar.length - 1].nextElementSibling;
+                        continue;
+                    } else if (doublegot === "$") {
+                        const afterNode = lcar[lcar.length - 1].nextElementSibling;
+                        lcar[0].before(newmc(lcar));
+                        removeallelsfarr(lcar);
+                        mtmp = afterNode;
+                        continue;
+                    } else if (doublegot === "*") {
+                        const afterNode = lcar[lcar.length - 1].nextElementSibling;
+                        lcar[0].before(newic(lcar));
+                        removeallelsfarr(lcar);
+                        mtmp = afterNode;
+                        continue;
+                    } else if (doublegot === "`" && lcar.length > 2) {
+                        const afterNode = lcar[lcar.length - 1].nextElementSibling;
+                        lcar[0].before(newlinecc(lcar));
+                        removeallelsfarr(lcar);
+                        mtmp = afterNode;
+                        continue;
+                    }
+                }
+            }
+        }
+        mtmp = mtmp.nextElementSibling;
+    }
+}
+
+function linescanner(line) {
+    if (!isRestoringHistory) ultimateccchecker();
+    if (!line || line.innerText === '') return;
+    rescanexploder(line);
+
+    blockquotescanner(line);
+    bulletscanner(line);
+    renderInlineChildren(line);
+    htmlscanner(line);
+    bulletscanner(line);
+    ultimatetchecker();
+    lineprchecker(line);
+}
+
+
 function newbltc(lcar){
     let nwbltc = document.createElement('div');
     nwbltc.className = 'bltc';
@@ -471,7 +900,32 @@ function newbltc(lcar){
 
     return nwbltc;
 }
-function bulletscanner(line){
+function syncBulletIndent(line) {
+    if (!line) return;
+    const bltc = line.querySelector(':scope > .bltc');
+
+    if (!bltc) {
+        line.classList.remove('has-bltc');
+        line.style.removeProperty('--bltc-indent');
+        return;
+    }
+
+    // Include any leading space .lc nodes if they sit before .bltc
+    let indentWidth = bltc.getBoundingClientRect().width;
+    let prev = bltc.previousElementSibling;
+    while (prev) {
+        if (prev.id !== 'cursor') {
+            indentWidth += prev.getBoundingClientRect().width;
+        }
+        prev = prev.previousElementSibling;
+    }
+
+    if (indentWidth > 0) {
+        line.style.setProperty('--bltc-indent', Math.ceil(indentWidth) + 'px');
+        line.classList.add('has-bltc');
+    }
+}
+function bulletscannerold(line){
     let mtmp = line.firstElementChild;
     const knownbullets = ['*','-','+','&'] // bullets can be easily added later
     let lcar = [];
@@ -481,6 +935,46 @@ function bulletscanner(line){
             lcar.push(mtmp.nextElementSibling);
             lcar[0].before(newbltc(lcar));
             removeallelsfarr(lcar);
+        }
+        mtmp = mtmp.nextElementSibling;
+    }
+}
+function isHrLine(el) {
+    return Boolean(el && (el.classList.contains('is-hr') || el.style.borderBottom === '1px solid black'));
+}
+function rescanexploder(line) {
+    if (!line) return;
+    const skip = new Set(['lc', 'upc', 'nc', 'bltc', 'bqc', 'mc']);
+    let temp = line.firstElementChild;
+
+    while (temp) {
+        const next = temp.nextElementSibling;
+        if (temp !== cursor && containers.includes(temp.className) && !skip.has(temp.className)) {
+            try {
+                exploder(temp);
+            } catch (e) {
+                console.log("rescanexploder: " + e);
+            }
+        }
+        temp = next;
+    }
+}
+function bulletscanner(line) {
+    let mtmp = line.firstElementChild;
+    const knownbullets = ['*', '-', '+', '&'];
+    let lcar = [];
+
+    while (mtmp && mtmp.className === 'lc' && ((mtmp.innerText === ' ' || mtmp.innerText==='\t') || knownbullets.includes(mtmp.innerText))) {
+        lcar.push(mtmp);
+        if (
+            knownbullets.includes(mtmp.innerText) &&
+            mtmp.nextElementSibling?.className === 'lc' &&
+            mtmp.nextElementSibling.innerText === ' '
+        ) {
+            lcar.push(mtmp.nextElementSibling);
+            lcar[0].before(newbltc(lcar));
+            removeallelsfarr(lcar);
+            break;
         }
         mtmp = mtmp.nextElementSibling;
     }
@@ -508,7 +1002,8 @@ function htmlscanner(line) {
 
             // Phase 1: Walk until we find the '>' of the opening tag (e.g., <span style="color:red">)
             while (stmp) {
-                if (stmp.className !== 'lc') break; // Stops if #cursor is still inside the opening tag!
+                if (stmp === cursor) break; // Stops if #cursor is still inside the opening tag!
+                if (stmp.className!=='lc') {stmp = stmp.previousElementSibling; exploder(stmp.nextElementSibling); stmp=stmp.nextElementSibling;}
                 lcar.push(stmp);
                 if (stmp.innerText === '>') {
                     gotOpenTagEnd = true;
@@ -541,7 +1036,8 @@ function htmlscanner(line) {
 
                     // Phase 2: Keep walking until the collected string ends with '</tagName>'
                     while (stmp) {
-                        if (stmp.className !== 'lc') break; // Stops if #cursor is inside!
+                        if (stmp === cursor) break; // Stops if #cursor is inside!
+                        if (stmp.className!=='lc') {stmp = stmp.previousElementSibling; exploder(stmp.nextElementSibling); stmp=stmp.nextElementSibling;}
                         lcar.push(stmp);
                         collectedAfterOpen += stmp.innerText;
 
@@ -578,6 +1074,48 @@ function htmlscanner(line) {
 
 function textgetter(element){
     //We can simply use innertext here!!
+}
+function exploderraw(element) {
+    if (containers.includes(element.className)) {
+        element.innerHTML = "";
+        let rw = element.getAttribute('rwmd') || "";
+        let graphemes = toGraphemes(rw);
+
+        for (let i = graphemes.length - 1; i >= 0; i--) {
+            if (graphemes[i] === '\n') {
+                element.after(newnc());
+            } else {
+                element.after(newlc(graphemes[i]));
+            }
+        }
+        element.remove();
+    } else if (element.className === 'cc' || element.className === 'tc') {
+        let rw = element.getAttribute('rwmd') || "";
+        let prevline = currntline();
+        let line = newline();
+        line.append(newcursor());
+        element.after(line);
+        element.remove();
+
+        if (prevline && prevline !== line && prevline.isConnected) {
+            linescanner(prevline);
+            lineprchecker(prevline);
+        }
+
+        // Insert raw text line-by-line WITHOUT re-triggering ultimateccchecker()
+        for (let ch of toGraphemes(rw.replace(/\r\n/g, '\n'))) {
+            if (ch === '\n') {
+                const nwline = newline();
+                cursor.parentElement.append(newnc());
+                cursor.parentElement.after(nwline);
+                nwline.append(newcursor());
+            } else {
+                cursor.before(newlc(ch));
+            }
+        }
+    } else {
+        console.error('exploder used for classname: ' + element.className);
+    }
 }
 function exploder(element) {
     if (containers.includes(element.className)) {
@@ -620,6 +1158,7 @@ function exploder(element) {
     } else {
         console.error('exploder used for classname: ' + element.className);
     }
+    lineprchecker(currntline());
 }
 function exploderold(element){
     if(containers.includes(element.className)){
@@ -656,7 +1195,7 @@ function lcargenfe(element){
         return lcar;
     }else console.error('exploder used for classname: '+element.className);
 }
-function lcartotext(lcar){
+function lcartotextold(lcar){
     let text = "";
     for(let i = 0;i<lcar.length;i++){
         if(lcar[i].className==='nc'){
@@ -937,11 +1476,13 @@ function lineprchecker(line) {
         line.firstElementChild.nextElementSibling.nextElementSibling?.className === 'lc' &&
         line.firstElementChild.nextElementSibling.nextElementSibling.innerText === '-'
     ) {
-        line.style.borderBottom = '1px solid black';
+        line.classList.add('is-hr');
+        line.style.borderBottom = '';
         line.innerHTML = '';
         return;
-    } else if (hasCursor && line.style.borderBottom === '1px solid black') {
-        line.style.borderBottom = 'none';
+    } else if (hasCursor && isHrLine(line)) {
+        line.classList.remove('is-hr');
+        line.style.borderBottom = '';
         inserttextatcursor('---');
     }
 
@@ -990,6 +1531,82 @@ function lineprchecker(line) {
         }
         line.setAttribute('prefix', '');
     }
+    syncBulletIndent(line);
+    syncBlockquote(line);
+
+}
+function newbqc(lcar) {
+    const rw = lcartorwmd(lcar);
+    const nwbqc = document.createElement('div');
+    nwbqc.className = 'bqc';
+    nwbqc.setAttribute('rwmd', rw);
+    // Count '>' characters to support nested quotes (>, >>, >>>)
+    const depth = (rw.match(/>/g) || []).length;
+    nwbqc.setAttribute('data-depth', depth);
+    nwbqc.innerText = '';
+    nwbqc.addEventListener('click', (e) => {
+        e.stopPropagation();
+        nwbqc.after(newcursor());
+        exploder(nwbqc);
+    });
+    return nwbqc;
+}
+
+function blockquotescannerold(line) {
+    if (!line) return;
+    let first = line.firstElementChild;
+    if (first === cursor) first = first.nextElementSibling;
+    if (!first || first.className !== 'lc' || first.innerText !== '>') return;
+
+    const lcar = [];
+    let cur = first;
+
+    // Collect one or more '>' markers (e.g. > or >>)
+    while (cur && cur.className === 'lc' && cur.innerText === '>') {
+        lcar.push(cur);
+        cur = cur.nextElementSibling;
+    }
+
+    // Require a trailing space so typing '>' alone doesn't trigger prematurely
+    if (cur && cur.className === 'lc' && (cur.innerText === ' ' || cur.innerText === '\u00A0')) {
+        lcar.push(cur);
+        lcar[0].before(newbqc(lcar));
+        removeallelsfarr(lcar);
+    }
+}
+function blockquotescanner(line) {
+    if (!line) return;
+    const first = line.firstElementChild;
+    if (!first || first.className !== 'lc' || first.innerText !== '>') return;
+
+    const lcar = [];
+    let cur = first;
+
+    while (cur && cur.className === 'lc' && cur.innerText === '>') {
+        lcar.push(cur);
+        cur = cur.nextElementSibling;
+    }
+
+    if (cur && cur.className === 'lc' && (cur.innerText === ' ' || cur.innerText === '\u00A0')) {
+        lcar.push(cur);
+        lcar[0].before(newbqc(lcar));
+        removeallelsfarr(lcar);
+    }
+}
+
+function syncBlockquote(line) {
+    if (!line) return;
+    const bqc = line.querySelector(':scope > .bqc');
+
+    if (!bqc) {
+        line.classList.remove('is-blockquote');
+        line.style.removeProperty('--bq-depth');
+        return;
+    }
+
+    const depth = parseInt(bqc.getAttribute('data-depth') || '1', 10);
+    line.style.setProperty('--bq-depth', depth);
+    line.classList.add('is-blockquote');
 }
 function nextelement(element){
     if (element.nextElementSibling) return element.nextElementSibling;
@@ -1135,6 +1752,7 @@ function ccchecker(element){
                 if(openinggot) closinggot = true;
                 else openinggot = true;
             }if (closinggot) {
+                if (mtmp?.nextElementSibling === cursor) return false;
                 lcar[0].parentElement.before(newcc(lcar));
                 removeallelsfarr(lcar);
                 removeunnecessarylines();//written to specifically remove lines vacated by this process!!
@@ -1436,7 +2054,7 @@ function newnc() {
     nwnc.style.userSelect = 'none';
     return nwnc;
 }
-function arrowright(){
+function arrowrightold(){
     let ae = cursor.nextElementSibling;
     if (!ae) return;
 
@@ -1455,7 +2073,7 @@ function arrowright(){
     }
 }
 
-function arrowleft(){
+function arrowleftold(){
     let pe = cursor.previousElementSibling;
     if (!pe) return; // Safely stop at the start of the line
 
@@ -1480,7 +2098,97 @@ function arrowleft(){
     }
 }
 
-function enter(){
+function arrowright() {
+    const curLine = currntline();
+    if (!curLine) return;
+
+    let ae = cursor.nextElementSibling;
+
+    if (!ae || ae.classList.contains('nc')) {
+        let nextBlock = curLine.nextElementSibling;
+        while (nextBlock && nextBlock.classList.contains('tc')) {
+            nextBlock = nextBlock.nextElementSibling;
+        }
+        if (!nextBlock) return;
+
+        if (nextBlock.classList.contains('cc')) {
+            const editor = document.getElementById('editor');
+            const anchorBefore = nextBlock.previousElementSibling;
+            exploder(nextBlock);
+            const firstLine = anchorBefore ? anchorBefore.nextElementSibling : editor.firstElementChild;
+            if (firstLine) {
+                firstLine.prepend(newcursor());
+                cursor.scrollIntoView({ block: 'nearest' });
+            }
+            return;
+        }
+
+        if (nextBlock.classList.contains('line')) {
+            nextBlock.prepend(newcursor());
+            lineprchecker(nextBlock);
+            cursor.scrollIntoView({ block: 'nearest' });
+        }
+        return;
+    }
+
+    if (ae.className === 'upc') {
+        exploder(ae);
+        arrowright();
+    } else if (containers.includes(ae.className)) {
+        exploder(ae);
+    } else {
+        ae.after(newcursor());
+        linescanner(currntline());
+    }
+}
+
+function arrowleft() {
+    const curLine = currntline();
+    if (!curLine) return;
+
+    let pe = cursor.previousElementSibling;
+
+    if (!pe) {
+        let prevBlock = curLine.previousElementSibling;
+        while (prevBlock && prevBlock.classList.contains('tc')) {
+            prevBlock = prevBlock.previousElementSibling;
+        }
+        if (!prevBlock) return;
+
+        if (prevBlock.classList.contains('cc')) {
+            exploder(prevBlock);
+            cursor.scrollIntoView({ block: 'nearest' });
+            return;
+        }
+
+        if (prevBlock.classList.contains('line')) {
+            const nc = prevBlock.querySelector('.nc');
+            if (nc) nc.before(newcursor());
+            else prevBlock.append(newcursor());
+            lineprchecker(prevBlock);
+            cursor.scrollIntoView({ block: 'nearest' });
+        }
+        return;
+    }
+
+    if (pe.className === 'upc') {
+        exploder(pe);
+        arrowleft();
+    } else if (containers.includes(pe.className)) {
+        exploder(pe);
+    } else if (pe.classList.contains('nc')) {
+        lineprchecker(currntline());
+        pe.before(newcursor());
+    } else if (pe.previousElementSibling) {
+        pe.previousElementSibling.after(newcursor());
+        linescanner(currntline());
+    } else {
+        pe.before(newcursor());
+        linescanner(currntline());
+    }
+}
+
+function enterold(){
     const nwline = document.createElement("div");
     nwline.className = "line";
     nwline.setAttribute('active','true');
@@ -1512,6 +2220,228 @@ function enter(){
     linescanner(prevline);
     helperlcpacker(prevline);
 }
+function enter() {
+    const nwline = document.createElement("div");
+    nwline.className = "line";
+    nwline.setAttribute('active', 'true');
+    cursor.parentElement.after(nwline);
+    cursor.parentElement.setAttribute('active', 'false');
+
+    let prevline = currntline();
+    let arrtomove = arreleaftcur();
+    if (!prevline.querySelector('.nc')) {
+        prevline.append(newnc());
+    }
+    lineprchecker(prevline);
+    nwline.append(newcursor());
+    elarappender(nwline, arrtomove);
+
+    const prevbqc = prevline.querySelector(':scope > .bqc');
+    const prevbltc = prevline.querySelector(':scope > .bltc');
+
+    if (prevbqc) {
+        const hasOtherContent = Array.from(prevline.children).some(
+            el => el !== prevbqc && el.className !== 'nc'
+        );
+        if (hasOtherContent || arrtomove.length > 0) {
+            const bqPrefix = prevbqc.getAttribute('rwmd') || '> ';
+            inserttextatcursor(bqPrefix);
+            blockquotescanner(nwline);
+            syncBlockquote(nwline);
+        } else {
+            prevline.remove();
+        }
+        linescanner(currntline());
+    }
+
+    if (prevbltc && prevline.isConnected) {
+        const hasOtherContent = Array.from(prevline.children).some(
+            el => el !== prevbltc && el !== prevbqc && el.className !== 'nc'
+        );
+        if (hasOtherContent || arrtomove.length > 0) {
+            inserttextatcursor(lcartotext(lcargenfe(prevbltc)));
+            bulletscanner(nwline);
+        } else {
+            prevline.remove();
+        }
+        linescanner(currntline());
+    }
+
+    if (prevline.isConnected) {
+        linescanner(prevline);
+        helperlcpacker(prevline);
+    }
+}
+
+function home(){
+    currntline().firstElementChild.before(newcursor());
+}
+function end(){
+    let le = currntline().lastElementChild;
+    if(le.className==='nc') le.before(newcursor());
+    else le.after(newcursor());
+}
+
+const wordbrekings = ['.',' ','-',',','_','*','+'];
+let selAnchor = null;
+
+function resetSelectionAnchor() {
+    selAnchor = null;
+}
+
+function captureCursorAnchor() {
+    const line = currntline();
+    if (!line) return null;
+    return {
+        line,
+        prevEl: cursor.previousElementSibling
+    };
+}
+
+function resolveAnchor(anchor) {
+    if (!anchor || !anchor.line || !anchor.line.isConnected) return null;
+    if (anchor.prevEl && anchor.line.contains(anchor.prevEl)) {
+        const idx = Array.prototype.indexOf.call(anchor.line.childNodes, anchor.prevEl);
+        return { node: anchor.line, offset: idx + 1 };
+    }
+    return { node: anchor.line, offset: 0 };
+}
+
+function getCursorDomPos() {
+    const line = currntline();
+    if (!line) return null;
+    const idx = Array.prototype.indexOf.call(line.childNodes, cursor);
+    return { node: line, offset: Math.max(0, idx) };
+}
+
+function ctrlright() {
+    let rtmp = cursor.nextElementSibling;
+    if (!rtmp || rtmp.className === 'nc') {
+        arrowright();
+        return;
+    }
+
+    if (rtmp.className === 'upc') {
+        exploder(rtmp);
+        rtmp = cursor.nextElementSibling;
+    }
+
+    while (rtmp && rtmp.className === 'lc' && wordbrekings.includes(rtmp.innerText)) {
+        rtmp = rtmp.nextElementSibling;
+        if (rtmp && rtmp.className === 'upc') {
+            let btmp = rtmp.previousElementSibling;
+            exploder(rtmp);
+            rtmp = btmp.nextElementSibling;
+        }
+    }
+
+    while (rtmp && rtmp.className !== 'nc' && !(rtmp.className === 'lc' && wordbrekings.includes(rtmp.innerText))) {
+        rtmp = rtmp.nextElementSibling;
+        if (rtmp && rtmp.className === 'upc') {
+            let btmp = rtmp.previousElementSibling;
+            exploder(rtmp);
+            rtmp = btmp.nextElementSibling;
+        }
+    }
+
+    if (rtmp) {
+        rtmp.before(newcursor());
+    } else {
+        currntline().append(newcursor());
+    }
+}
+
+function ctrlleft() {
+    let ltmp = cursor.previousElementSibling;
+    if (!ltmp) {
+        arrowleft();
+        return;
+    }
+
+    if (ltmp.className === 'upc') {
+        exploder(ltmp);
+        ltmp = cursor.previousElementSibling;
+    }
+
+    while (ltmp && ltmp.className === 'lc' && wordbrekings.includes(ltmp.innerText)) {
+        ltmp = ltmp.previousElementSibling;
+        if (ltmp && ltmp.className === 'upc') {
+            let ntmp = ltmp.nextElementSibling;
+            exploder(ltmp);
+            ltmp = ntmp.previousElementSibling;
+        }
+    }
+
+    while (ltmp && !(ltmp.className === 'lc' && wordbrekings.includes(ltmp.innerText))) {
+        ltmp = ltmp.previousElementSibling;
+        if (ltmp && ltmp.className === 'upc') {
+            let ntmp = ltmp.nextElementSibling;
+            exploder(ltmp);
+            ltmp = ntmp.previousElementSibling;
+        }
+    }
+
+    if (ltmp) {
+        ltmp.after(newcursor());
+    } else {
+        currntline().prepend(newcursor());
+    }
+}
+
+function shiftctrlleft() {
+    const sl = window.getSelection();
+    if (!selAnchor || sl.isCollapsed) {
+        selAnchor = captureCursorAnchor();
+    }
+    ctrlleft();
+    const start = resolveAnchor(selAnchor);
+    const end = getCursorDomPos();
+    if (start && end) {
+        sl.setBaseAndExtent(start.node, start.offset, end.node, end.offset);
+    }
+}
+
+function extendSelection(moveFn) {
+    const sl = window.getSelection();
+    if (!selAnchor || sl.isCollapsed) {
+        selAnchor = captureCursorAnchor();
+    }
+    moveFn();
+    const start = resolveAnchor(selAnchor);
+    const end = getCursorDomPos();
+    if (start && end) {
+        sl.setBaseAndExtent(start.node, start.offset, end.node, end.offset);
+    }
+}
+
+function shiftleft() {
+    extendSelection(arrowleft);
+}
+
+function shiftright() {
+    extendSelection(arrowright);
+}
+
+function shiftup() {
+    extendSelection(arrowup);
+}
+
+function shiftdown() {
+    extendSelection(arrowdown);
+}
+
+function shiftctrlright() {
+    const sl = window.getSelection();
+    if (!selAnchor || sl.isCollapsed) {
+        selAnchor = captureCursorAnchor();
+    }
+    ctrlright();
+    const start = resolveAnchor(selAnchor);
+    const end = getCursorDomPos();
+    if (start && end) {
+        sl.setBaseAndExtent(start.node, start.offset, end.node, end.offset);
+    }
+}
 
 const segmenter = new Intl.Segmenter('bn', { granularity: 'grapheme' });
 const toGraphemes = (str) => Array.from(segmenter.segment(str), s => s.segment);
@@ -1533,6 +2463,9 @@ function inserttextatcursorold(text) {
     linescanner(currntline());
 }
 function inserttextatcursor(text) {
+    if (hasActiveSelection()) {
+        deleteselection();
+    }
     pushHistory(text === ' ' || text.includes('\n'));
     const sl = window.getSelection();
     if (sl && !sl.isCollapsed && sl.rangeCount > 0) {
@@ -1574,8 +2507,7 @@ function inserttttextatcursor(text){
         }
     }
 }
-
-function backspace(){
+function deleteselection(){
     const sl = window.getSelection();
     if (sl && !sl.isCollapsed && sl.rangeCount > 0) {
         const range = sl.getRangeAt(0);
@@ -1585,9 +2517,29 @@ function backspace(){
             return;
         }
     }
+}
+function backspace(){
+    deleteselection();
     const prevChar = cursor.previousElementSibling;
     console.log(prevChar);
     if (prevChar && prevChar.classList.contains("lc")) {
+        const codePoints = Array.from(prevChar.innerText);
+        if (codePoints.length > 1) {
+            codePoints.pop();
+            prevChar.innerText = codePoints.join('');
+            lineprchecker(currntline());
+            pushHistory(false);
+            return;
+        }
+
+        let autoopenrs = ["(", "{", "["];
+        if (autoopenrs.includes(prevChar.innerText)) {
+            let autopener = prevChar.innerText;
+            let ae = cursor.nextElementSibling;
+            if (autopener === "(" && ae && ae.innerText === ")") ae.remove();
+            else if (autopener === "{" && ae && ae.innerText === "}") ae.remove();
+            else if (autopener === "[" && ae && ae.innerText === "]") ae.remove();
+        }
         prevChar.remove();
         lineprchecker(currntline());
     }else if (prevChar && prevChar.classList.contains("mc")) {
@@ -1619,7 +2571,10 @@ function backspace(){
         }
     } else if(prevChar && prevChar.className==='nc') {
         arrowleft(); backspace();
-    } else if(prevChar && containers.includes(prevChar.className)) exploder(prevChar);
+    } else if(prevChar && containers.includes(prevChar.className)) {
+        exploder(prevChar);
+        lineprchecker(currntline());
+    }
     else{
         let pel = cursor.parentElement;
         let prevps = pel.previousElementSibling;
@@ -1636,13 +2591,344 @@ function backspace(){
 
             //prevps.append(newcursor());
             prevps.setAttribute('active','true');
-        }else if(prevps.className==='cc' || prevps.className==='tc'){
+        }else if(prevps?.className==='cc' || prevps?.className==='tc'){
             exploder(prevps); removeunnecessarylines();
         }else{
             console.log("Nothing to do!!");
         }
     }
     pushHistory(false);
+}
+let verticalGoalX = null;
+
+function resetVerticalGoal() {
+    verticalGoalX = null;
+}
+
+function getCursorX() {
+    if (!cursor || !cursor.isConnected) return 0;
+    return cursor.getBoundingClientRect().left;
+}
+
+function placeCursorAtOffset(line, prevSib, offset) {
+    let cur = prevSib ? prevSib.nextElementSibling : line.firstElementChild;
+    if (offset <= 0 || !cur || cur.className === 'nc') {
+        if (cur) cur.before(newcursor());
+        else line.append(newcursor());
+        return;
+    }
+
+    let count = 1;
+    while (count < offset && cur.nextElementSibling && cur.nextElementSibling.className === 'lc') {
+        cur = cur.nextElementSibling;
+        count++;
+    }
+    cur.after(newcursor());
+}
+
+function unpackLineUpcs(line) {
+    Array.from(line.children).forEach(child => {
+        if (child.className === 'upc') exploder(child);
+    });
+}
+
+function getVisualRows(line) {
+    const nodes = Array.from(line.children).filter(
+        el => el.id !== 'cursor' && el.className !== 'nc'
+    );
+    const rows = [];
+
+    for (const node of nodes) {
+        const rect = node.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) continue;
+
+        const lastRow = rows[rows.length - 1];
+        if (!lastRow || rect.top >= lastRow.bottom - 2) {
+            rows.push({
+                top: rect.top,
+                bottom: rect.bottom,
+                nodes: [node]
+            });
+        } else {
+            lastRow.top = Math.min(lastRow.top, rect.top);
+            lastRow.bottom = Math.max(lastRow.bottom, rect.bottom);
+            lastRow.nodes.push(node);
+        }
+    }
+    return rows;
+}
+
+function placeCursorOnRow(targetLine, rowNodes, goalX) {
+    if (!rowNodes || rowNodes.length === 0) {
+        const nc = targetLine.querySelector('.nc');
+        if (nc) nc.before(newcursor());
+        else targetLine.append(newcursor());
+        lineprchecker(targetLine);
+        cursor.scrollIntoView({ block: 'nearest' });
+        return;
+    }
+
+    let chosen = null;
+    let chosenSide = 'after';
+
+    for (const node of rowNodes) {
+        const rect = node.getBoundingClientRect();
+        if (goalX <= rect.left) {
+            chosen = node;
+            chosenSide = 'before';
+            break;
+        }
+        if (goalX <= rect.right) {
+            chosen = node;
+            chosenSide = 'inside';
+            break;
+        }
+        chosen = node;
+        chosenSide = 'after';
+    }
+
+    if (chosenSide === 'inside') {
+        const rect = chosen.getBoundingClientRect();
+        if (chosen.className === 'lc') {
+            const mid = rect.left + rect.width / 2;
+            if (goalX < mid) chosen.before(newcursor());
+            else chosen.after(newcursor());
+        } else if (containers.includes(chosen.className)) {
+            const rw = chosen.getAttribute('rwmd') || '';
+            const len = toGraphemes(rw).length;
+            const ratio = Math.max(0, Math.min(1, (goalX - rect.left) / (rect.width || 1)));
+            const offset = Math.round(ratio * len);
+
+            const prevSib = chosen.previousElementSibling;
+            exploder(chosen);
+            placeCursorAtOffset(targetLine, prevSib, offset);
+        } else {
+            chosen.after(newcursor());
+        }
+    } else if (chosenSide === 'before') {
+        chosen.before(newcursor());
+    } else {
+        chosen.after(newcursor());
+    }
+
+    lineprchecker(targetLine);
+    cursor.scrollIntoView({ block: 'nearest' });
+}
+
+function moveVertical(direction) {
+    const curLine = currntline();
+    if (!curLine) return;
+
+    if (verticalGoalX === null) {
+        verticalGoalX = getCursorX();
+    }
+
+    unpackLineUpcs(curLine);
+    const curRows = getVisualRows(curLine);
+
+    if (curRows.length > 1) {
+        const curRect = cursor.getBoundingClientRect();
+        const curMidY = curRect.top + curRect.height / 2;
+        let curRowIndex = 0;
+        let bestDist = Infinity;
+
+        curRows.forEach((row, idx) => {
+            const rowMidY = (row.top + row.bottom) / 2;
+            const dist = Math.abs(rowMidY - curMidY);
+            if (dist < bestDist) {
+                bestDist = dist;
+                curRowIndex = idx;
+            }
+        });
+
+        const nextRowIndex = direction === 'up' ? curRowIndex - 1 : curRowIndex + 1;
+        if (nextRowIndex >= 0 && nextRowIndex < curRows.length) {
+            placeCursorOnRow(curLine, curRows[nextRowIndex].nodes, verticalGoalX);
+            return;
+        }
+    }
+
+    let target = direction === 'up'
+        ? curLine.previousElementSibling
+        : curLine.nextElementSibling;
+
+    while (target && target.classList.contains('tc')) {
+        target = direction === 'up'
+            ? target.previousElementSibling
+            : target.nextElementSibling;
+    }
+
+    if (!target) return;
+
+    if (target.classList.contains('cc')) {
+        const editor = document.getElementById('editor');
+        const anchorBefore = target.previousElementSibling;
+        exploder(target);
+
+        const landingLine = direction === 'down'
+            ? (anchorBefore ? anchorBefore.nextElementSibling : editor.firstElementChild)
+            : currntline();
+
+        if (landingLine && landingLine.classList.contains('line')) {
+            unpackLineUpcs(landingLine);
+            const rows = getVisualRows(landingLine);
+            const rowNodes = rows.length > 0
+                ? (direction === 'down' ? rows[0].nodes : rows[rows.length - 1].nodes)
+                : [];
+            placeCursorOnRow(landingLine, rowNodes, verticalGoalX);
+        }
+        return;
+    }
+
+    if (target.classList.contains('line')) {
+        if (target.style.borderBottom === '1px solid black') {
+            target.append(newcursor());
+            lineprchecker(target);
+            cursor.scrollIntoView({ block: 'nearest' });
+            return;
+        }
+
+        unpackLineUpcs(target);
+        const rows = getVisualRows(target);
+        const rowNodes = rows.length > 0
+            ? (direction === 'down' ? rows[0].nodes : rows[rows.length - 1].nodes)
+            : [];
+        placeCursorOnRow(target, rowNodes, verticalGoalX);
+    }
+}
+
+function arrowup() {
+    moveVertical('up');
+}
+
+function arrowdown() {
+    moveVertical('down');
+}
+
+function deleteForward() {
+    resetVerticalGoal();
+
+    const sl = window.getSelection();
+    if (sl && !sl.isCollapsed && sl.rangeCount > 0) {
+        const range = sl.getRangeAt(0);
+        if (document.querySelector('#editor')?.contains(range.commonAncestorContainer)) {
+            deleteSelectedRange(range);
+            sl.removeAllRanges();
+            return;
+        }
+    }
+
+    const curLine = currntline();
+    if (!curLine) return;
+
+    const nextEl = cursor.nextElementSibling;
+
+    if (nextEl && nextEl.className === 'lc') {
+        nextEl.remove();
+        linescanner(curLine);
+        lineprchecker(curLine);
+        pushHistory(false);
+        return;
+    }
+
+    if (nextEl && nextEl.className === 'upc') {
+        exploder(nextEl);
+        const firstAfter = cursor.nextElementSibling;
+        if (firstAfter && firstAfter.className === 'lc') {
+            firstAfter.remove();
+        }
+        linescanner(curLine);
+        lineprchecker(curLine);
+        pushHistory(false);
+        return;
+    }
+
+    if (nextEl && containers.includes(nextEl.className)) {
+        exploder(nextEl);
+        pushHistory(false);
+        return;
+    }
+
+    if (!nextEl || nextEl.className === 'nc') {
+        const nextBlock = curLine.nextElementSibling;
+        if (!nextBlock) return;
+
+        if (nextBlock.classList.contains('tc')) {
+            return;
+        }
+
+        if (nextBlock.classList.contains('cc')) {
+            const editor = document.getElementById('editor');
+            const anchorBefore = nextBlock.previousElementSibling;
+            exploder(nextBlock);
+            const firstExplodedLine = anchorBefore
+                ? anchorBefore.nextElementSibling
+                : editor.firstElementChild;
+            if (firstExplodedLine) {
+                firstExplodedLine.prepend(newcursor());
+            }
+            pushHistory(true);
+            return;
+        }
+
+        if (nextBlock.classList.contains('line')) {
+            if (nextBlock.style.borderBottom === '1px solid black') {
+                nextBlock.remove();
+                pushHistory(true);
+                return;
+            }
+
+            const savedPrefix = nextBlock.getAttribute('prefix') || '';
+            if (savedPrefix) {
+                for (let i = savedPrefix.length - 1; i >= 0; i--) {
+                    nextBlock.prepend(newlc(savedPrefix[i]));
+                }
+                nextBlock.setAttribute('prefix', '');
+            }
+
+            if (nextEl && nextEl.className === 'nc') {
+                nextEl.remove();
+            }
+
+            while (nextBlock.firstElementChild) {
+                const child = nextBlock.firstElementChild;
+                if (child.id === 'cursor') {
+                    child.remove();
+                } else {
+                    curLine.append(child);
+                }
+            }
+
+            nextBlock.remove();
+            linescanner(curLine);
+            lineprchecker(curLine);
+            pushHistory(true);
+        }
+    }
+}
+
+let pendingBackspaceTimer = null;
+
+function scheduleBackspace() {
+    if (pendingBackspaceTimer) {
+        clearTimeout(pendingBackspaceTimer);
+        backspace();
+        lineprchecker(currntline());
+    }
+    pendingBackspaceTimer = setTimeout(() => {
+        pendingBackspaceTimer = null;
+        backspace();
+        lineprchecker(currntline());
+    }, 25);
+}
+
+function cancelPendingAvroBackspace(text) {
+    if (!pendingBackspaceTimer) return;
+    const isBengaliOrWord = /[\u0980-\u09FF]/.test(text) || text.length > 1;
+    if (isBengaliOrWord) {
+        clearTimeout(pendingBackspaceTimer);
+        pendingBackspaceTimer = null;
+    }
 }
 window.addEventListener('paste',(e)=>{
     e.preventDefault(); // Stop the browser from dumping raw text into a div!
@@ -1654,9 +2940,147 @@ window.addEventListener('paste',(e)=>{
     // Feed the string into your character-by-character typing engine!
     inserttextatcursor(pastedText);
 })
+const selectionWrapPairs = {
+    '(': ['(', ')'],
+    '{': ['{', '}'],
+    '[': ['[', ']'],
+    '$': ['$', '$'],
+    '`': ['`', '`'],
+    '*': ['*', '*']
+};
+
 window.addEventListener("keydown", (e) => {
     console.log(e.key);
+    // 1. Never blur/refocus IME on pure modifier keys (keeps Shift+selection alive)
+    if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta' || e.key === 'CapsLock') {
+        return;
+    }
+
+    // 2. Wrap active #editor selection directly in keydown BEFORE imefocus() wipes it
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && selectionWrapPairs[e.key] && hasActiveSelection()) {
+        const sl = window.getSelection();
+        const editor = document.querySelector('#editor');
+        if (sl.rangeCount > 0 && editor?.contains(sl.getRangeAt(0).commonAncestorContainer)) {
+            e.preventDefault();
+            const [open, close] = selectionWrapPairs[e.key];
+            wrapSelection(open, close);
+            ime.value = '';
+            return;
+        }
+    }
     // Ignore system hotkeys like Ctrl+R, Alt, Meta
+    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        if(e.key==="Tab"){
+            e.preventDefault();
+            e.stopPropagation();
+            inserttextatcursor("\t");
+        }
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            resetVerticalGoal();
+            if (e.shiftKey) {
+                shiftleft();
+            } else {
+                resetSelectionAnchor();
+                window.getSelection().removeAllRanges();
+                arrowleft();
+            }
+            return;
+        }
+
+        if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            resetVerticalGoal();
+            if (e.shiftKey) {
+                shiftright();
+            } else {
+                resetSelectionAnchor();
+                window.getSelection().removeAllRanges();
+                arrowright();
+            }
+            return;
+        }
+
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                shiftup();
+            } else {
+                resetSelectionAnchor();
+                window.getSelection().removeAllRanges();
+                arrowup();
+            }
+            return;
+        }
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                shiftdown();
+            } else {
+                resetSelectionAnchor();
+                window.getSelection().removeAllRanges();
+                arrowdown();
+            }
+            return;
+        }
+        else if(e.key==='Shift'){
+            e.preventDefault();
+        }
+        //imefocus();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowUp') {
+        e.preventDefault();
+        resetVerticalGoal();
+        if (e.shiftKey) {
+            shiftctrlup();
+        } else {
+            resetSelectionAnchor();
+            window.getSelection().removeAllRanges();
+            ctrlup();
+        }
+        return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowDown') {
+        e.preventDefault();
+        resetVerticalGoal();
+        if (e.shiftKey) {
+            shiftctrldown();
+        } else {
+            resetSelectionAnchor();
+            window.getSelection().removeAllRanges();
+            ctrldown();
+        }
+        return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowRight') {
+        e.preventDefault();
+        resetVerticalGoal();
+        if (e.shiftKey) {
+            shiftctrlright();
+        } else {
+            resetSelectionAnchor();
+            window.getSelection().removeAllRanges();
+            ctrlright();
+        }
+        //imefocus();
+        return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        resetVerticalGoal();
+        if (e.shiftKey) {
+            shiftctrlleft();
+        } else {
+            resetSelectionAnchor();
+            window.getSelection().removeAllRanges();
+            ctrlleft();
+        }
+        //imefocus();
+        return;
+    }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
         e.preventDefault();
         window.print();
@@ -1671,10 +3095,30 @@ window.addEventListener("keydown", (e) => {
 
     }*/
     if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        resetVerticalGoal();
         arrowleft();
-    }
-    if (e.key === "ArrowRight") {
+    } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        resetVerticalGoal();
         arrowright();
+    } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        arrowup();
+    } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        arrowdown();
+    } /*else if (e.key === "Backspace") {
+        resetVerticalGoal();
+        backspace();
+        lineprchecker(currntline());
+    }*/ else if (e.key === "Delete") {
+        e.preventDefault();
+        deleteForward();
+    }else if(e.key==="Home"){
+        home();
+    }else if(e.key==="End"){
+        end();
     }
 
         // 1. Handle regular typed characters
@@ -1690,8 +3134,14 @@ window.addEventListener("keydown", (e) => {
     else if (e.key === "Backspace") {
         backspace();
         lineprchecker(currntline());
+
     }
+    imefocus();
 });
+function imefocus(){
+    ime.blur();
+    ime.focus({ preventScroll: true });
+}
 function hasActiveSelection() {
     const sl = window.getSelection();
     return Boolean(sl && !sl.isCollapsed && sl.toString().length > 0);
@@ -1852,6 +3302,21 @@ function toggleBullet() {
     ime.focus();
 }
 
+function toggleBlockquote() {
+    const line = currntline();
+    if (!line) return;
+    const existing = line.querySelector(':scope > .bqc');
+    if (existing) {
+        existing.remove();
+        lineprchecker(line);
+    } else {
+        const marker = newbqc([newlc('>'), newlc(' ')]);
+        line.prepend(marker);
+        lineprchecker(line);
+    }
+    pushHistory(true);
+}
+
 // 4. Insert a horizontal divider (---)
 function insertHR() {
     const line = currntline();
@@ -1865,7 +3330,11 @@ function insertHR() {
 function insertCodeBlock() {
     const line = currntline();
     if (line && line.innerText.trim().length > 0) enter();
-    inserttextatcursor('```js\n\n```');
+    inserttextatcursor('```code');
+    let cline = currntline();
+    let nwline = newline()
+    nwline.append(newlc('`'), newlc('`'), newlc('`'))
+    cline.after(nwline);
     // Move cursor up onto the blank line inside the fence
     const closingLine = currntline();
     const codeLine = closingLine.previousElementSibling;
@@ -1922,7 +3391,7 @@ function toggleTablePicker() {
     if (picker) picker.classList.toggle('open');
 }
 
-function insertTable(rows, cols) {
+function insertTableold(rows, cols) {
     pushHistory(true);
     const header = '| ' + Array.from({ length: cols }, (_, i) => `Col ${i + 1}`).join(' | ') + ' |';
     const sep = '| ' + Array.from({ length: cols }, () => '---').join(' | ') + ' |';
@@ -1956,6 +3425,43 @@ function insertTable(rows, cols) {
     }
     pushHistory(true);
     ime.focus();
+}
+function insertTable(rows, cols) {
+    pushHistory(true);
+    const header = '| ' + Array.from({ length: cols }, () => '').join(' | ') + ' |';
+    const sep = '| ' + Array.from({ length: cols }, () => '---').join(' | ') + ' |';
+    const bodyRows = Array.from({ length: rows }, () =>
+        '| ' + Array.from({ length: cols }, () => '').join(' | ') + ' |'
+    );
+
+    const tableMd = [header, sep, ...bodyRows].join('\n');
+    const tcEl = newtc([{ className: 'lc', innerText: tableMd }]);
+
+    const line = currntline();
+    const afterLine = newline();
+    afterLine.setAttribute('active', 'true');
+
+    if (line && line.innerText.trim().length === 0) {
+        line.before(tcEl);
+        line.after(afterLine);
+        afterLine.append(newcursor());
+        line.remove();
+    } else if (line) {
+        line.setAttribute('active', 'false');
+        line.after(tcEl);
+        tcEl.after(afterLine);
+        afterLine.append(newcursor());
+        linescanner(line);
+        lineprchecker(line);
+    } else {
+        const editor = document.querySelector('#editor');
+        editor.append(tcEl, afterLine);
+        afterLine.append(newcursor());
+    }
+
+    pushHistory(true);
+    // Drop the caret straight into the first header cell so you can type immediately
+    tcEl.querySelector('th')?.focus();
 }
 
 // Close table picker if clicking outside

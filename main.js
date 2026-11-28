@@ -33,6 +33,10 @@ function createWindow() {
 
     mainWindow.loadFile(path.join(__dirname, 'renderer', 'base.html'));
     mainWindow.setMenuBarVisibility(false);
+    mainWindow.webContents.once('did-finish-load', () => {
+        const initialFile = getMdFileFromArgs(process.argv);
+        if (initialFile) sendFileToRenderer(initialFile);
+    });
 }
 // Helper: Recursively scan a vault directory for .md files and subfolders
 function scanVaultTree(dirPath) {
@@ -157,7 +161,102 @@ app.whenReady().then(createWindow);
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
+ipcMain.handle('save-note-dialog', async (event, { content, suggestedName }) => {
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save Markdown Note',
+        defaultPath: suggestedName || 'Untitled.md',
+        filters: [{ name: 'Markdown Files', extensions: ['md'] }]
+    });
+
+    if (canceled || !filePath) {
+        return { canceled: true };
+    }
+
+    fs.writeFileSync(filePath, content, 'utf-8');
+    return { canceled: false, filePath };
+});
+
+ipcMain.handle('rename-file', async (event, oldPath, rawNewName) => {
+    try {
+        if (!oldPath || !fs.existsSync(oldPath)) {
+            return { success: false, error: 'Original file not found.' };
+        }
+
+        const cleanName = rawNewName.trim().replace(/[<>:"/\\|?*]/g, '');
+        if (!cleanName) {
+            return { success: false, error: 'Invalid file name.' };
+        }
+
+        const finalName = cleanName.endsWith('.md') ? cleanName : `${cleanName}.md`;
+        const dir = path.dirname(oldPath);
+        const newPath = path.join(dir, finalName);
+
+        if (newPath.toLowerCase() === oldPath.toLowerCase()) {
+            return { success: true, newPath: oldPath, fileName: path.basename(oldPath, '.md') };
+        }
+
+        if (fs.existsSync(newPath)) {
+            return { success: false, error: 'A note with that name already exists.' };
+        }
+
+        fs.renameSync(oldPath, newPath);
+        return { success: true, newPath, fileName: path.basename(newPath, '.md') };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
+ipcMain.handle('check-path-exists', async (event, targetPath) => {
+    return Boolean(targetPath && fs.existsSync(targetPath));
+});
+
+function sendExternalFileToRenderer(win, filePath) {
+    if (!win || !filePath || !fs.existsSync(filePath)) return;
+    const vaultPath = path.dirname(filePath);
+    win.webContents.send('open-external-file', { filePath, vaultPath });
+}
+
+ipcMain.handle('ask-unsaved-changes', async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const { response } = await dialog.showMessageBox(win, {
+        type: 'warning',
+        buttons: ['Save', "Don't Save", 'Cancel'],
+        defaultId: 0,
+        cancelId: 2,
+        title: 'Unsaved Note',
+        message: 'Do you want to save your changes before closing?',
+        detail: 'Your note has not been saved yet.'
+    });
+
+    if (response === 0) return 'save';
+    if (response === 1) return 'discard';
+    return 'cancel';
+});
 
 app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
+
+function getMdFileFromArgs(argv) {
+    return argv.find(arg => /\.(md|markdown)$/i.test(arg) && fs.existsSync(arg)) || null;
+}
+
+function sendFileToRenderer(filePath) {
+    if (!filePath || !mainWindow) return;
+    const content = fs.readFileSync(filePath, 'utf-8');
+    mainWindow.webContents.send('open-external-file', { filePath, content });
+}
+
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+    app.quit();
+} else {
+    app.on('second-instance', (_event, argv) => {
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.focus();
+            const filePath = getMdFileFromArgs(argv);
+            if (filePath) sendFileToRenderer(filePath);
+        }
+    });
+}
